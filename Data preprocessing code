@@ -1,0 +1,55 @@
+pip install requests Pillow tensorflow pandas numpy
+import pandas as pd
+import numpy as np
+import requests
+from io import BytesIO
+from PIL import Image
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.inception_v3 import InceptionV3, preprocess_input
+
+# Load the sales data
+data = pd.read_csv('myntra_data.csv')
+
+# Function to calculate average and total sales
+def calculate_sales_features(x):
+    if isinstance(x, list):  # Check if x is a list
+        avg_sales = sum(x) / len(x) if len(x) > 0 else 0
+        total_sales = sum(x)
+    else:  # If not a list, use the value directly
+        avg_sales = x
+        total_sales = x
+    return avg_sales, total_sales
+
+# Apply the function to create new features
+data['average_sales'], data['total_sales'] = zip(*data['historical_sales'].apply(calculate_sales_features))
+
+# Load the InceptionV3 model pre-trained on ImageNet
+model = InceptionV3(weights='imagenet', include_top=False)
+
+# Function to download and preprocess an image
+def preprocess_image_from_url(url):
+    response = requests.get(url)
+    img = Image.open(BytesIO(response.content))
+    img = img.resize((299, 299))  # Resize to the target size for InceptionV3
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = preprocess_input(img_array)
+    return img_array
+
+# List to store image features
+image_features = []
+
+# Extract features for each image
+for url in data['image']:
+    img_array = preprocess_image_from_url(url)
+    features = model.predict(img_array)
+    image_features.append(features.flatten())
+
+# Convert list to a DataFrame
+image_features_df = pd.DataFrame(image_features)
+
+# Concatenate the image features with the sales data
+data = pd.concat([data, image_features_df], axis=1)
+
+# Save the processed data to a new CSV file
+data.to_csv('processed_sales_data.csv', index=False)
