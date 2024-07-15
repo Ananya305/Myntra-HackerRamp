@@ -1,0 +1,47 @@
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, classification_report
+
+# Load dataset from .npy files
+image_features = np.load('image_features.npy')  # Replace with your actual file path
+cluster_labels = np.load('cluster_labels.npy')  # Replace with your actual file path
+
+# Ensure the data shapes match
+assert image_features.shape[0] == cluster_labels.shape[0], "Mismatch between number of samples and labels"
+
+# Splitting the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(image_features, cluster_labels, test_size=0.2, random_state=42)
+
+# Standardizing the features (important for SVM and Neural Network)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Initializing the classifiers
+classifiers = {
+    'Support Vector Machine': SVC(),
+    'Random Forest': RandomForestClassifier(n_estimators=100),
+    'Neural Network': MLPClassifier(max_iter=300),
+    'Naive Bayes': GaussianNB()
+}
+
+# Dictionary to store accuracy results
+accuracy_results = {}
+
+# Training and evaluating each classifier
+for name, clf in classifiers.items():
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    accuracy_results[name] = accuracy
+    print(f'{name} accuracy: {accuracy:.2f}')
+    print(classification_report(y_test, y_pred))
+
+# Identifying the best-performing classifier
+best_classifier = max(accuracy_results, key=accuracy_results.get)
+print(f'The best-performing classifier is: {best_classifier} with an accuracy of {accuracy_results[best_classifier]:.2f}')
