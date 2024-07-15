@@ -1,0 +1,44 @@
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+import matplotlib.pyplot as plt
+
+# Sample dataset (for demonstration purposes)
+# Replace this with your actual dataset
+myntra_data = np.array([[1, 2], [2, 3], [3, 4], [5, 6], [7, 8], [9, 10], [8, 9], [6, 5], [4, 3], [2, 1]])
+
+# Determine the optimum number of clusters using silhouette score
+silhouette_scores = []
+range_n_clusters = range(2, 10)  # Testing for k values from 2 to 9
+
+for n_clusters in range_n_clusters:
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    cluster_labels = kmeans.fit_predict(X)
+    silhouette_avg = silhouette_score(X, cluster_labels)
+    silhouette_scores.append(silhouette_avg)
+    print(f"For n_clusters = {n_clusters}, the average silhouette_score is {silhouette_avg:.3f}")
+
+# Plot the silhouette scores for different values of k
+plt.figure(figsize=(10, 6))
+plt.plot(range_n_clusters, silhouette_scores, marker='o')
+plt.xlabel('Number of clusters (k)')
+plt.ylabel('Silhouette Score')
+plt.title('Silhouette Scores for Various Numbers of Clusters')
+plt.grid(True)
+plt.show()
+
+# Choose the optimum number of clusters (k) as the one with the highest silhouette score
+optimal_k = range_n_clusters[np.argmax(silhouette_scores)]
+print(f'The optimal number of clusters is {optimal_k}')
+
+# Perform K-means clustering with the optimal number of clusters
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+cluster_labels = kmeans.fit_predict(X)
+
+# Print the cluster labels for each data point
+print(f'Cluster labels for each data point: {cluster_labels}')
+
+# Predict the cluster for a new data point
+new_data_point = np.array([[4, 5]])
+predicted_cluster = kmeans.predict(new_data_point)
+print(f'The new data point {new_data_point} belongs to cluster {predicted_cluster[0]}')
