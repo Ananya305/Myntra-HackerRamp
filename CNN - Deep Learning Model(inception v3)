@@ -50,6 +50,66 @@ for img_path in image_paths:
     img_features = model.predict(img_array)
     features.append(img_features.flatten())
 
+2nd code:
+
+import pandas as pd
+import requests
+from PIL import Image
+from io import BytesIO
+import os
+import numpy as np
+from tensorflow.keras.applications.inception_v3 import InceptionV3, preprocess_input
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.models import Model
+
+# Load the Excel file
+file_path = 'C:\\Users\\anagh\\Desktop\\myntra\\myntra_data.xlsx' # Update this to the local path of your file
+data = pd.read_excel(file_path)
+
+# Extract image URLs
+image_urls = data['IMAGES'].tolist()
+
+# Create a directory to save the images
+image_dir = 'downloaded_images'
+os.makedirs(image_dir, exist_ok=True)
+
+# Download and save the images
+image_paths = []
+for idx, url in enumerate(image_urls):
+    try:
+        response = requests.get(url)
+        img = Image.open(BytesIO(response.content))
+        img_path = os.path.join(image_dir, f'image_{idx}.jpg')
+        img.save(img_path)
+        image_paths.append(img_path)
+    except Exception as e:
+        print(f"Failed to download image from {url}: {e}")
+
+# Load the InceptionV3 model pre-trained on ImageNet
+base_model = InceptionV3(weights='imagenet')
+# Remove the final classification layer to get the features
+model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').output)
+
+# Function to preprocess and load the image
+def load_and_preprocess_image(img_path):
+    img = image.load_img(img_path, target_size=(299, 299))
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    return preprocess_input(img_array)
+
+# Extract features for all images
+features = []
+for img_path in image_paths:
+    img_array = load_and_preprocess_image(img_path)
+    img_features = model.predict(img_array)
+    features.append(img_features.flatten())
+
+# Convert features list to numpy array
+features = np.array(features)
+
+# Save features to a file
+np.save('image_features.npy', features)
+
 # Convert features list to numpy array
 features = np.array(features)
 
